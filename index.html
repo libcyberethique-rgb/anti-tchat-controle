@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tchat entre Potes</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #1e1e2e;
+      color: #cdd6f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    /* Container Principal */
+    .app-container {
+      width: 400px;
+      height: 600px;
+      background-color: #181825;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Écran de Connexion */
+    #login-screen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      padding: 20px;
+    }
+
+    #login-screen h2 {
+      margin-bottom: 20px;
+      color: #89b4fa;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #45475a;
+      background-color: #313244;
+      color: #cdd6f4;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 15px;
+    }
+
+    input[type="text"]:focus {
+      border-color: #89b4fa;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background-color: #89b4fa;
+      color: #11111b;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #b4befe;
+    }
+
+    /* Interface du Tchat */
+    #chat-screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .chat-header {
+      padding: 15px;
+      background-color: #11111b;
+      color: #89b4fa;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid #313244;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .message.system {
+      align-self: center;
+      background-color: transparent;
+      color: #a6adc8;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .message.received {
+      align-self: flex-start;
+      background-color: #313244;
+      color: #cdd6f4;
+    }
+
+    .message.sent {
+      align-self: flex-end;
+      background-color: #89b4fa;
+      color: #11111b;
+    }
+
+    .message .pseudo {
+      font-weight: bold;
+      font-size: 11px;
+      margin-bottom: 3px;
+      display: block;
+      color: #f5e0dc;
+    }
+
+    .chat-input-zone {
+      padding: 10px;
+      background-color: #11111b;
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid #313244;
+    }
+
+    .chat-input-zone input {
+      margin-bottom: 0;
+    }
+
+    .chat-input-zone button {
+      width: auto;
+      padding: 0 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Écran de Connexion -->
+    <div id="login-screen">
+      <h2>Rejoindre le Tchat</h2>
+      <input type="text" id="pseudo-input" placeholder="Ton pseudo..." autocomplete="off">
+      <button onclick="rejoindreTchat()">Entrer</button>
+    </div>
+
+    <!-- Écran de Discussion -->
+    <div id="chat-screen">
+      <div class="chat-header" id="user-header">Tchat entre Potes</div>
+      <div class="chat-messages" id="messages-zone"></div>
+      <div class="chat-input-zone">
+        <input type="text" id="message-input" placeholder="Écris un message..." autocomplete="off" onkeypress="gestionTouche(event)">
+        <button onclick="envoyerMessage()">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let pseudo = "";
+
+    function rejoindreTchat() {
+      const input = document.getElementById('pseudo-input');
+      pseudo = input.value.trim();
+
+      if (!pseudo) {
+        alert("Choisis un pseudo !");
+        return;
+      }
+
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('chat-screen').style.display = 'flex';
+      document.getElementById('user-header').innerText = `Connecté en tant que : ${pseudo}`;
+
+      ajouterMessageSysteme(`*** ${pseudo} a rejoint le tchat ! ***`);
+    }
+
+    function envoyerMessage() {
+      const input = document.getElementById('message-input');
+      const texte = input.value.trim();
+
+      if (!texte) return;
+
+      // Afficher ton propre message
+      ajouterMessage(texte, 'sent');
+      input.value = '';
+
+      // Simulation de réponse de pote (pour tester sans serveur web)
+      simulerReponsePote(texte);
+    }
+
+    function ajouterMessage(texte, type, auteur = '') {
+      const zone = document.getElementById('messages-zone');
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message', type);
+
+      if (auteur && type === 'received') {
+        const pseudoSpan = document.createElement('span');
+        pseudoSpan.classList.add('pseudo');
+        pseudoSpan.innerText = auteur;
+        msgDiv.appendChild(pseudoSpan);
+      }
+
+      const contenu = document.createTextNode(texte);
+      msgDiv.appendChild(contenu);
+
+      zone.appendChild(msgDiv);
+      zone.scrollTop = zone.scrollHeight;
+    }
+
+    function ajouterMessageSysteme(texte) {
+      const zone = document.getElementById('messages-zone');
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message', 'system');
+      msgDiv.innerText = texte;
+      zone.appendChild(msgDiv);
+      zone.scrollTop = zone.scrollHeight;
+    }
+
+    function gestionTouche(e) {
+      if (e.key === 'Enter') {
+        envoyerMessage();
+      }
+    }
+
+    // Un mini bot pour simuler tes potes en local dans ton navigateur
+    function simulerReponsePote(messageUtilisateur) {
+      setTimeout(() => {
+        const reponses = [
+          "Trop chaud !",
+          "On se fait une partie après ?",
+          "Mdr t'es sérieux ?",
+          "Attends 2 minutes j'arrive."
+        ];
+        const potes = ["Thomas", "Alex", "Léa"];
+        
+        const poteAleatoire = potes[Math.floor(Math.random() * potes.length)];
+        const reponseAleatoire = reponses[Math.floor(Math.random() * reponses.length)];
+
+        ajouterMessage(reponseAleatoire, 'received', poteAleatoire);
+      }, 1500);
+    }
+  </script>
+</body>
+</html>
